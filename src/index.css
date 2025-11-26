@@ -1,0 +1,29 @@
+:root {
+  font-family: "Inter", "Space Grotesk", "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  line-height: 1.4;
+  font-weight: 400;
+  color: #f8fafc;
+  background-color: #01030f;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: radial-gradient(120% 120% at 50% 0%, #0b1221 0%, #050915 45%, #01030f 100%);
+  color: #f8fafc;
+}
+
+button {
+  font-family: inherit;
+  background: none;
+}
