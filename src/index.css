@@ -21,6 +21,9 @@ body {
   min-height: 100vh;
   background: radial-gradient(120% 120% at 50% 0%, #0b1221 0%, #050915 45%, #01030f 100%);
   color: #f8fafc;
+  overflow-x: hidden;
+  width: 100%;
+  max-width: 100vw;
 }
 
 button {
