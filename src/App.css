@@ -191,9 +191,12 @@
   width: 100%;
 }
 
-.key-side .pill-button {
+.key-side .pill-button,
+.key-center .pill-button {
   width: 100%;
   text-align: center;
+  text-transform: none;
+  letter-spacing: 0.04em;
 }
 
 .pill-button {
@@ -211,6 +214,12 @@
     border-color 0.12s ease,
     color 0.12s ease,
     background 0.12s ease;
+  -webkit-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 
 .pill-button:hover {
@@ -264,6 +273,12 @@
     box-shadow 0.12s ease,
     border 0.12s ease;
   min-height: 130px;
+  -webkit-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 
 .pad:hover {
