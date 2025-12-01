@@ -1,5 +1,14 @@
 // src/App.tsx
-import { useState, useEffect, useRef, useMemo } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type KeyboardEvent as ReactKeyboardEvent,
+  type MouseEvent,
+  type TouchEvent,
+} from 'react';
 import * as Tone from 'tone';
 import './App.css';
 
@@ -17,26 +26,53 @@ type Tonic =
   | 'A#'
   | 'B';
 
-type InstrumentId = 'piano' | 'synth' | 'epiano';
-
-type Chord = {
-  id: string;
-  label: string; // I, ii など
-  name: string; // Cmaj, Dm...
-  notes: string[]; // ["C4", "E4", "G4"] など
-  keyLabel: string; // 表示用キー (A,S,D...)
-  keyCode: string; // 実際に押すキー
-};
-
-type KeyOption = {
-  id: Tonic; // 内部的に使うトニック
-  label: string; // 表示用 "C", "Db" など
-};
+type InstrumentId = 'piano' | 'epiano' | 'synth';
 
 type InstrumentOption = {
   id: InstrumentId;
-  label: string; // 表示用
+  label: string;
 };
+
+type KeyOption = {
+  id: Tonic;
+  label: string;
+};
+
+type PadGroup = 'diatonic' | 'secondary' | 'subMinor' | 'pop';
+
+type PadDefinition = {
+  id: string;
+  roman: string;
+  group: PadGroup;
+  rootOffset: number;
+  intervals: number[];
+  nameSuffix?: string;
+  accidentalPreference?: 'flat' | 'sharp';
+  nameTransform?: (root: string) => string;
+};
+
+type PadBase = {
+  id: string;
+  roman: string;
+  group: PadGroup;
+  chordName: string;
+  notes: string[];
+};
+
+type Pad = PadBase & {
+  keyBinding: KeyBinding;
+};
+
+type KeyBinding = {
+  key: string;
+  label: string;
+};
+
+const TONE_INSTRUMENTS: InstrumentOption[] = [
+  { id: 'piano', label: 'Piano' },
+  { id: 'epiano', label: 'E.Piano' },
+  { id: 'synth', label: 'Synth' },
+];
 
 const KEY_CENTER: KeyOption = { id: 'C', label: 'C' };
 
@@ -56,27 +92,42 @@ const KEY_LEFT_SIDE: KeyOption[] = [
   { id: 'A#', label: 'Bb' },
 ];
 
-const INSTRUMENT_OPTIONS: InstrumentOption[] = [
-  { id: 'piano', label: 'Piano' },
-  { id: 'epiano', label: 'E.Piano' },
-  { id: 'synth', label: 'Synth' },
+const KEY_BINDINGS: KeyBinding[] = [
+  { key: 'q', label: 'Q' },
+  { key: 'w', label: 'W' },
+  { key: 'e', label: 'E' },
+  { key: 'r', label: 'R' },
+  { key: 't', label: 'T' },
+  { key: 'y', label: 'Y' },
+  { key: 'u', label: 'U' },
+  { key: 'i', label: 'I' },
+  { key: 'o', label: 'O' },
+  { key: 'p', label: 'P' },
+  { key: 'a', label: 'A' },
+  { key: 's', label: 'S' },
+  { key: 'd', label: 'D' },
+  { key: 'f', label: 'F' },
+  { key: 'g', label: 'G' },
+  { key: 'h', label: 'H' },
+  { key: 'j', label: 'J' },
+  { key: 'k', label: 'K' },
+  { key: 'l', label: 'L' },
+  { key: 'z', label: 'Z' },
+  { key: 'x', label: 'X' },
+  { key: 'c', label: 'C' },
+  { key: 'v', label: 'V' },
+  { key: 'b', label: 'B' },
+  { key: 'n', label: 'N' },
+  { key: 'm', label: 'M' },
+  { key: 'Q', label: '⇧Q' },
+  { key: 'W', label: '⇧W' },
+  { key: 'E', label: '⇧E' },
+  { key: 'R', label: '⇧R' },
+  { key: 'T', label: '⇧T' },
+  { key: 'Y', label: '⇧Y' },
 ];
 
-type ChordDef = {
-  id: string;
-  label: string;
-  degreeIndex: number; // メジャースケールの何番目か（0〜7）
-  quality: 'maj' | 'min' | 'dim';
-  keyLabel: string;
-  keyCode: string;
-  octaveOffset?: number; // I↑ だけ +1 オクターブ など
-};
-
-// メジャースケール（全音・全音・半音…）の半音オフセット
-const MAJOR_SCALE_OFFSETS = [0, 2, 4, 5, 7, 9, 11, 12];
-
-// NOTE_NAMES と MIDI 変換
-const NOTE_NAMES = [
+const NOTE_NAMES_SHARP = [
   'C',
   'C#',
   'D',
@@ -90,8 +141,21 @@ const NOTE_NAMES = [
   'A#',
   'B',
 ];
+const NOTE_NAMES_FLAT = [
+  'C',
+  'Db',
+  'D',
+  'Eb',
+  'E',
+  'F',
+  'Gb',
+  'G',
+  'Ab',
+  'A',
+  'Bb',
+  'B',
+];
 
-// C4 を 60 とする
 const TONIC_TO_MIDI4: Record<Tonic, number> = {
   C: 60,
   'C#': 61,
@@ -99,241 +163,439 @@ const TONIC_TO_MIDI4: Record<Tonic, number> = {
   'D#': 63,
   E: 64,
   F: 65,
-  'F#': 54,
-  G: 55,
-  'G#': 56,
-  A: 57,
-  'A#': 58,
-  B: 59,
+  'F#': 66,
+  G: 67,
+  'G#': 68,
+  A: 69,
+  'A#': 70,
+  B: 71,
 };
 
-// 度数ごとの定義（ローマ数字・質・割り当てキー）
-const CHORD_DEFS: ChordDef[] = [
+const PAD_DEFINITIONS: PadDefinition[] = [
   {
-    id: 'I',
-    label: 'I',
-    degreeIndex: 0,
-    quality: 'maj',
-    keyLabel: 'A',
-    keyCode: 'a',
+    id: 'pad-01',
+    roman: 'I',
+    group: 'diatonic',
+    rootOffset: 0,
+    intervals: [0, 4, 7],
   },
   {
-    id: 'ii',
-    label: 'ii',
-    degreeIndex: 1,
-    quality: 'min',
-    keyLabel: 'S',
-    keyCode: 's',
+    id: 'pad-02',
+    roman: 'ii',
+    group: 'diatonic',
+    rootOffset: 2,
+    intervals: [0, 3, 7],
+    nameSuffix: 'm',
   },
   {
-    id: 'iii',
-    label: 'iii',
-    degreeIndex: 2,
-    quality: 'min',
-    keyLabel: 'D',
-    keyCode: 'd',
+    id: 'pad-03',
+    roman: 'iii',
+    group: 'diatonic',
+    rootOffset: 4,
+    intervals: [0, 3, 7],
+    nameSuffix: 'm',
   },
   {
-    id: 'IV',
-    label: 'IV',
-    degreeIndex: 3,
-    quality: 'maj',
-    keyLabel: 'F',
-    keyCode: 'f',
+    id: 'pad-04',
+    roman: 'IV',
+    group: 'diatonic',
+    rootOffset: 5,
+    intervals: [0, 4, 7],
   },
   {
-    id: 'V',
-    label: 'V',
-    degreeIndex: 4,
-    quality: 'maj',
-    keyLabel: 'G',
-    keyCode: 'g',
+    id: 'pad-05',
+    roman: 'V',
+    group: 'diatonic',
+    rootOffset: 7,
+    intervals: [0, 4, 7],
   },
   {
-    id: 'vi',
-    label: 'vi',
-    degreeIndex: 5,
-    quality: 'min',
-    keyLabel: 'H',
-    keyCode: 'h',
+    id: 'pad-06',
+    roman: 'vi',
+    group: 'diatonic',
+    rootOffset: 9,
+    intervals: [0, 3, 7],
+    nameSuffix: 'm',
   },
   {
-    id: 'vii°',
-    label: 'vii°',
-    degreeIndex: 6,
-    quality: 'dim',
-    keyLabel: 'J',
-    keyCode: 'j',
+    id: 'pad-07',
+    roman: 'vii°',
+    group: 'diatonic',
+    rootOffset: 11,
+    intervals: [0, 3, 6],
+    nameSuffix: '°',
   },
   {
-    id: 'I8',
-    label: 'I',
-    degreeIndex: 7,
-    quality: 'maj',
-    keyLabel: 'K',
-    keyCode: 'k',
-    octaveOffset: 0,
+    id: 'pad-08',
+    roman: 'I↑',
+    group: 'diatonic',
+    rootOffset: 12,
+    intervals: [0, 4, 7],
+    nameTransform: (root) => `${root}↑`,
+  },
+  {
+    id: 'pad-09',
+    roman: 'V7',
+    group: 'secondary',
+    rootOffset: 7,
+    intervals: [0, 4, 7, 10],
+    nameSuffix: '7',
+  },
+  {
+    id: 'pad-10',
+    roman: 'V/ii',
+    group: 'secondary',
+    rootOffset: 9,
+    intervals: [0, 4, 7, 10],
+    nameSuffix: '7',
+  },
+  {
+    id: 'pad-11',
+    roman: 'V/iii',
+    group: 'secondary',
+    rootOffset: 11,
+    intervals: [0, 4, 7, 10],
+    nameSuffix: '7',
+  },
+  {
+    id: 'pad-12',
+    roman: 'V/IV',
+    group: 'secondary',
+    rootOffset: 0,
+    intervals: [0, 4, 7, 10],
+    nameSuffix: '7',
+  },
+  {
+    id: 'pad-13',
+    roman: 'V/V',
+    group: 'secondary',
+    rootOffset: 2,
+    intervals: [0, 4, 7, 10],
+    nameSuffix: '7',
+  },
+  {
+    id: 'pad-14',
+    roman: 'V/vi',
+    group: 'secondary',
+    rootOffset: 4,
+    intervals: [0, 4, 7, 10],
+    nameSuffix: '7',
+  },
+  {
+    id: 'pad-15',
+    roman: 'V/iii(alt)',
+    group: 'secondary',
+    rootOffset: 11,
+    intervals: [0, 4, 7, 10],
+    nameSuffix: '7alt',
+  },
+  {
+    id: 'pad-16',
+    roman: 'V9',
+    group: 'secondary',
+    rootOffset: 7,
+    intervals: [0, 4, 7, 10, 14],
+    nameSuffix: '9',
+  },
+  {
+    id: 'pad-17',
+    roman: 'iv',
+    group: 'subMinor',
+    rootOffset: 5,
+    intervals: [0, 3, 7],
+    nameSuffix: 'm',
+  },
+  {
+    id: 'pad-18',
+    roman: 'iv6',
+    group: 'subMinor',
+    rootOffset: 5,
+    intervals: [0, 3, 7, 9],
+    nameSuffix: 'm6',
+  },
+  {
+    id: 'pad-19',
+    roman: 'bVI',
+    group: 'subMinor',
+    rootOffset: 8,
+    intervals: [0, 4, 7],
+    accidentalPreference: 'flat',
+  },
+  {
+    id: 'pad-20',
+    roman: 'bVII',
+    group: 'subMinor',
+    rootOffset: 10,
+    intervals: [0, 4, 7],
+    accidentalPreference: 'flat',
+  },
+  {
+    id: 'pad-21',
+    roman: '#i°',
+    group: 'subMinor',
+    rootOffset: 1,
+    intervals: [0, 3, 6],
+    nameSuffix: '°',
+    accidentalPreference: 'sharp',
+  },
+  {
+    id: 'pad-22',
+    roman: 'ii°',
+    group: 'subMinor',
+    rootOffset: 2,
+    intervals: [0, 3, 6],
+    nameSuffix: '°',
+  },
+  {
+    id: 'pad-23',
+    roman: '#iv°',
+    group: 'subMinor',
+    rootOffset: 6,
+    intervals: [0, 3, 6],
+    nameSuffix: '°',
+    accidentalPreference: 'sharp',
+  },
+  {
+    id: 'pad-24',
+    roman: '#V°',
+    group: 'subMinor',
+    rootOffset: 8,
+    intervals: [0, 3, 6],
+    nameSuffix: '°',
+    accidentalPreference: 'sharp',
+  },
+  {
+    id: 'pad-25',
+    roman: 'Isus4',
+    group: 'pop',
+    rootOffset: 0,
+    intervals: [0, 5, 7],
+    nameSuffix: 'sus4',
+  },
+  {
+    id: 'pad-26',
+    roman: 'IVsus2',
+    group: 'pop',
+    rootOffset: 5,
+    intervals: [0, 2, 7],
+    nameSuffix: 'sus2',
+  },
+  {
+    id: 'pad-27',
+    roman: 'Vsus4',
+    group: 'pop',
+    rootOffset: 7,
+    intervals: [0, 5, 7],
+    nameSuffix: 'sus4',
+  },
+  {
+    id: 'pad-28',
+    roman: 'Imaj7',
+    group: 'pop',
+    rootOffset: 0,
+    intervals: [0, 4, 7, 11],
+    nameSuffix: 'maj7',
+  },
+  {
+    id: 'pad-29',
+    roman: 'IVmaj7',
+    group: 'pop',
+    rootOffset: 5,
+    intervals: [0, 4, 7, 11],
+    nameSuffix: 'maj7',
+  },
+  {
+    id: 'pad-30',
+    roman: 'I6',
+    group: 'pop',
+    rootOffset: 0,
+    intervals: [0, 4, 7, 9],
+    nameSuffix: '6',
+  },
+  {
+    id: 'pad-31',
+    roman: 'Iadd9',
+    group: 'pop',
+    rootOffset: 0,
+    intervals: [0, 4, 7, 14],
+    nameSuffix: 'add9',
+  },
+  {
+    id: 'pad-32',
+    roman: 'vi(add11)',
+    group: 'pop',
+    rootOffset: 9,
+    intervals: [0, 3, 5, 7],
+    nameSuffix: 'm(add11)',
   },
 ];
 
-// ---- MIDI ユーティリティ ----
-const midiToNote = (midi: number): string => {
-  const noteIndex = midi % 12;
+const getNoteLetter = (
+  noteIndex: number,
+  preference: 'flat' | 'sharp' | 'neutral' = 'neutral'
+): string => {
+  const normalized = ((noteIndex % 12) + 12) % 12;
+  if (preference === 'flat') return NOTE_NAMES_FLAT[normalized];
+  if (preference === 'sharp') return NOTE_NAMES_SHARP[normalized];
+  const sharpName = NOTE_NAMES_SHARP[normalized];
+  if (!sharpName.includes('#')) return sharpName;
+  return NOTE_NAMES_FLAT[normalized];
+};
+
+const midiToNoteId = (
+  midi: number,
+  preference: 'flat' | 'sharp' | 'neutral' = 'neutral'
+): string => {
+  const noteIndex = ((midi % 12) + 12) % 12;
   const octave = Math.floor(midi / 12) - 1;
-  return `${NOTE_NAMES[noteIndex]}${octave}`;
+  const letter = getNoteLetter(noteIndex, preference);
+  return `${letter}${octave}`;
 };
 
-const buildTriad = (
-  rootMidi: number,
-  quality: 'maj' | 'min' | 'dim'
-): string[] => {
-  let intervals: number[];
-  switch (quality) {
-    case 'maj':
-      intervals = [0, 4, 7];
-      break;
-    case 'min':
-      intervals = [0, 3, 7];
-      break;
-    case 'dim':
-      intervals = [0, 3, 6];
-      break;
-  }
-  return intervals.map((i) => midiToNote(rootMidi + i));
-};
+const LOW_TONIC_RANGE: Tonic[] = ['F#', 'G', 'G#', 'A', 'A#'];
 
-const buildDiatonicChords = (tonic: Tonic): Chord[] => {
-  const tonicMidi = TONIC_TO_MIDI4[tonic];
-
-  return CHORD_DEFS.map((def) => {
-    const baseOffset = MAJOR_SCALE_OFFSETS[def.degreeIndex];
-    const rootMidi = tonicMidi + baseOffset + (def.octaveOffset ?? 0);
-    const notes = buildTriad(rootMidi, def.quality);
-
-    // 表示用のコード名（超ざっくり）
-    const rootName = NOTE_NAMES[((rootMidi % 12) + 12) % 12];
-    let suffix = '';
-    if (def.quality === 'maj') suffix = 'maj';
-    if (def.quality === 'min') suffix = 'm';
-    if (def.quality === 'dim') suffix = 'dim';
+const buildPads = (tonic: Tonic): PadBase[] => {
+  const tonicBaseMidi = TONIC_TO_MIDI4[tonic];
+  const octaveAdjust = LOW_TONIC_RANGE.includes(tonic) ? -12 : 0;
+  const tonicMidi = tonicBaseMidi + octaveAdjust;
+  return PAD_DEFINITIONS.map((definition) => {
+    const rootMidi = tonicMidi + definition.rootOffset;
+    const preference = definition.accidentalPreference ?? 'neutral';
+    const notes = definition.intervals.map((interval) =>
+      midiToNoteId(rootMidi + interval, preference)
+    );
+    const rootLabel = getNoteLetter(rootMidi, preference);
+    const chordName = definition.nameTransform
+      ? definition.nameTransform(rootLabel)
+      : `${rootLabel}${definition.nameSuffix ?? ''}`;
 
     return {
-      id: def.id,
-      label: def.label,
-      name: `${rootName}${suffix}`,
+      id: definition.id,
+      roman: definition.roman,
+      group: definition.group,
+      chordName,
       notes,
-      keyLabel: def.keyLabel,
-      keyCode: def.keyCode,
     };
   });
 };
 
-// ---- シンセ生成 ----
-const createPoly = (instrument: InstrumentId): Tone.PolySynth => {
+const createInstrument = (instrument: InstrumentId): Tone.PolySynth => {
   switch (instrument) {
-    case 'piano':
-      return new Tone.PolySynth(Tone.Synth, {
-        volume: -8,
-        oscillator: { type: 'triangle' },
-        envelope: { attack: 0.01, decay: 0.2, sustain: 0.6, release: 0.5 },
-      }).toDestination();
-
     case 'epiano':
       return new Tone.PolySynth(Tone.Synth, {
         volume: -10,
         oscillator: { type: 'sine' },
         envelope: { attack: 0.02, decay: 0.4, sustain: 0.7, release: 1.2 },
       }).toDestination();
-
     case 'synth':
-    default:
       return new Tone.PolySynth(Tone.Synth, {
         volume: -6,
         oscillator: { type: 'sawtooth' },
         envelope: { attack: 0.005, decay: 0.15, sustain: 0.5, release: 0.3 },
       }).toDestination();
+    case 'piano':
+    default:
+      return new Tone.PolySynth(Tone.Synth, {
+        volume: -8,
+        oscillator: { type: 'triangle' },
+        envelope: { attack: 0.01, decay: 0.2, sustain: 0.6, release: 0.6 },
+      }).toDestination();
   }
 };
 
 function App() {
-  const [activePadIds, setActivePadIds] = useState<string[]>([]);
   const [tonic, setTonic] = useState<Tonic>('C');
   const [instrument, setInstrument] = useState<InstrumentId>('piano');
-  const activeInstrumentLabel =
-    INSTRUMENT_OPTIONS.find((inst) => inst.id === instrument)?.label ?? '';
+  const [activePadIds, setActivePadIds] = useState<string[]>([]);
+  const pads = useMemo(() => {
+    const basePads = buildPads(tonic);
+    if (basePads.length !== KEY_BINDINGS.length) {
+      console.warn('Pad and key binding count mismatch.');
+    }
+    return basePads.map((pad, index) => ({
+      ...pad,
+      keyBinding: KEY_BINDINGS[index] ?? { key: pad.id, label: pad.id },
+    }));
+  }, [tonic]);
 
   const synthRef = useRef<Tone.PolySynth | null>(null);
-  const activeKeysRef = useRef<Record<string, string[]>>({}); // keyCode -> notes
+  const audioStartedRef = useRef(false);
+  const heldPadsRef = useRef<Record<string, boolean>>({});
 
-  // キー変更に応じてコードを生成
-  const chords = useMemo(() => buildDiatonicChords(tonic), [tonic]);
-
-  // シンセの初期化 & 音色切り替え
   useEffect(() => {
-    if (synthRef.current) {
-      synthRef.current.dispose();
-      synthRef.current = null;
-    }
-    synthRef.current = createPoly(instrument);
-
+    const synth = createInstrument(instrument);
+    synthRef.current = synth;
     return () => {
-      if (synthRef.current) {
-        synthRef.current.dispose();
-        synthRef.current = null;
-      }
+      synth.dispose();
+      synthRef.current = null;
     };
   }, [instrument]);
 
-  const playChord = (chord: Chord, fromKey?: string) => {
-    if (!synthRef.current) return;
-    if (fromKey && activeKeysRef.current[fromKey]) return; // 押しっぱなし対策
-
-    chord.notes.forEach((note) => {
-      synthRef.current!.triggerAttack(note, Tone.now());
-    });
-
-    setActivePadIds((prev) =>
-      prev.includes(chord.id) ? prev : [...prev, chord.id]
-    );
-
-    if (fromKey) {
-      activeKeysRef.current[fromKey] = chord.notes;
-    }
-  };
-
-  const stopChord = (chord: Chord, fromKey?: string) => {
-    if (!synthRef.current) return;
-
-    const notes =
-      fromKey && activeKeysRef.current[fromKey]
-        ? activeKeysRef.current[fromKey]
-        : chord.notes;
-
-    notes.forEach((note) => {
-      synthRef.current!.triggerRelease(note, Tone.now());
-    });
-
-    setActivePadIds((prev) => prev.filter((id) => id !== chord.id));
-
-    if (fromKey) {
-      delete activeKeysRef.current[fromKey];
-    }
-  };
-
-  // キーボード入力（A, S, D...）に対応
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      const key = e.key.toLowerCase();
-      const chord = chords.find((c) => c.keyCode === key);
-      if (!chord) return;
-      playChord(chord, key);
+    heldPadsRef.current = {};
+    setActivePadIds([]);
+  }, [tonic, instrument]);
+
+  const startAudioContext = useCallback(async () => {
+    if (audioStartedRef.current) return;
+    await Tone.start();
+    audioStartedRef.current = true;
+  }, []);
+
+  const handlePadPress = useCallback(
+    async (pad: Pad) => {
+      const synth = synthRef.current;
+      if (!synth || heldPadsRef.current[pad.id]) return;
+
+      await startAudioContext();
+
+      pad.notes.forEach((note) => synth.triggerAttack(note, Tone.now()));
+      heldPadsRef.current[pad.id] = true;
+      setActivePadIds((prev) =>
+        prev.includes(pad.id) ? prev : [...prev, pad.id]
+      );
+    },
+    [startAudioContext]
+  );
+
+  const handlePadRelease = useCallback((pad: Pad) => {
+    const synth = synthRef.current;
+    if (!synth || !heldPadsRef.current[pad.id]) return;
+
+    pad.notes.forEach((note) => synth.triggerRelease(note, Tone.now()));
+    delete heldPadsRef.current[pad.id];
+    setActivePadIds((prev) => prev.filter((id) => id !== pad.id));
+  }, []);
+
+  const handlePointerDown = (
+    event: MouseEvent<HTMLButtonElement> | TouchEvent<HTMLButtonElement>,
+    pad: Pad
+  ) => {
+    event.preventDefault();
+    void handlePadPress(pad);
+  };
+
+  const handlePointerUp = (
+    event: MouseEvent<HTMLButtonElement> | TouchEvent<HTMLButtonElement>,
+    pad: Pad
+  ) => {
+    event.preventDefault();
+    handlePadRelease(pad);
+  };
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const pad = pads.find((item) => item.keyBinding.key === event.key);
+      if (!pad) return;
+      event.preventDefault();
+      void handlePadPress(pad);
     };
 
-    const handleKeyUp = (e: KeyboardEvent) => {
-      const key = e.key.toLowerCase();
-      const chord = chords.find((c) => c.keyCode === key);
-      if (!chord) return;
-      stopChord(chord, key);
+    const handleKeyUp = (event: KeyboardEvent) => {
+      const pad = pads.find((item) => item.keyBinding.key === event.key);
+      if (!pad) return;
+      event.preventDefault();
+      handlePadRelease(pad);
     };
 
     window.addEventListener('keydown', handleKeyDown);
@@ -343,7 +605,10 @@ function App() {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, [chords]);
+  }, [pads, handlePadPress, handlePadRelease]);
+
+  const activeInstrumentLabel =
+    TONE_INSTRUMENTS.find((option) => option.id === instrument)?.label ?? '';
 
   return (
     <div className="app">
@@ -352,8 +617,8 @@ function App() {
           <div className="hero-brand">
             <div className="logo">CodeSampler</div>
             <div className="hero-meta">
-              <span className="hero-chip">SESSION 01</span>
-              <span className="hero-chip">NEBULA</span>
+              <span className="hero-chip">Chord Lab</span>
+              <span className="hero-chip">32 Pad Grid</span>
             </div>
           </div>
           <div className="hero-status">
@@ -371,44 +636,41 @@ function App() {
               </div>
               <div className="key-selector">
                 <div className="key-side key-side--left">
-                  {KEY_LEFT_SIDE.map((k) => (
+                  {KEY_LEFT_SIDE.map((key) => (
                     <button
-                      key={k.id}
+                      key={key.id}
                       type="button"
-                      className={
-                        'pill-button' +
-                        (tonic === k.id ? ' pill-button--active' : '')
-                      }
-                      onClick={() => setTonic(k.id)}
+                      className={`pill-button${
+                        tonic === key.id ? ' pill-button--active' : ''
+                      }`}
+                      onClick={() => setTonic(key.id)}
                     >
-                      {k.label}
+                      {key.label}
                     </button>
                   ))}
                 </div>
                 <div className="key-center">
                   <button
                     type="button"
-                    className={
-                      'pill-button' +
-                      (tonic === KEY_CENTER.id ? ' pill-button--active' : '')
-                    }
+                    className={`pill-button${
+                      tonic === KEY_CENTER.id ? ' pill-button--active' : ''
+                    }`}
                     onClick={() => setTonic(KEY_CENTER.id)}
                   >
                     {KEY_CENTER.label}
                   </button>
                 </div>
                 <div className="key-side key-side--right">
-                  {KEY_RIGHT_SIDE.map((k) => (
+                  {KEY_RIGHT_SIDE.map((key) => (
                     <button
-                      key={k.id}
+                      key={key.id}
                       type="button"
-                      className={
-                        'pill-button' +
-                        (tonic === k.id ? ' pill-button--active' : '')
-                      }
-                      onClick={() => setTonic(k.id)}
+                      className={`pill-button${
+                        tonic === key.id ? ' pill-button--active' : ''
+                      }`}
+                      onClick={() => setTonic(key.id)}
                     >
-                      {k.label}
+                      {key.label}
                     </button>
                   ))}
                 </div>
@@ -421,26 +683,18 @@ function App() {
                 <span className="panel-value">{activeInstrumentLabel}</span>
               </div>
               <div className="pill-group">
-                {INSTRUMENT_OPTIONS.map((inst) => (
+                {TONE_INSTRUMENTS.map((option) => (
                   <button
-                    key={inst.id}
+                    key={option.id}
                     type="button"
-                    className={
-                      'pill-button' +
-                      (instrument === inst.id ? ' pill-button--active' : '')
-                    }
-                    onClick={() => setInstrument(inst.id)}
+                    className={`pill-button${
+                      instrument === option.id ? ' pill-button--active' : ''
+                    }`}
+                    onClick={() => setInstrument(option.id)}
                   >
-                    {inst.label}
+                    {option.label}
                   </button>
                 ))}
-              </div>
-            </div>
-
-            <div className="panel-card panel-card--compact">
-              <div className="hint">
-                <span>Keyboard</span>
-                <span className="hint-keys">A S D F G H J K</span>
               </div>
             </div>
           </aside>
@@ -448,30 +702,39 @@ function App() {
           <section className="pad-panel">
             <div className="pad-panel-header">
               <span className="panel-label">Chord Pads</span>
-              <span className="panel-value">{chords.length} slots</span>
+              <span className="panel-value">{pads.length} slots</span>
             </div>
             <div className="pad-grid">
-              {chords.map((chord) => (
+              {pads.map((pad) => (
                 <button
-                  key={chord.id}
-                  className={`pad ${
-                    activePadIds.includes(chord.id) ? 'active' : ''
+                  key={pad.id}
+                  type="button"
+                  className={`pad pad--${pad.group}${
+                    activePadIds.includes(pad.id) ? ' is-active' : ''
                   }`}
-                  onMouseDown={() => playChord(chord)}
-                  onMouseUp={() => stopChord(chord)}
-                  onMouseLeave={() => stopChord(chord)}
-                  onTouchStart={(e) => {
-                    e.preventDefault();
-                    playChord(chord);
+                  aria-pressed={activePadIds.includes(pad.id)}
+                  onMouseDown={(event) => handlePointerDown(event, pad)}
+                  onMouseUp={(event) => handlePointerUp(event, pad)}
+                  onMouseLeave={() => handlePadRelease(pad)}
+                  onTouchStart={(event) => handlePointerDown(event, pad)}
+                  onTouchEnd={(event) => handlePointerUp(event, pad)}
+                  onTouchCancel={() => handlePadRelease(pad)}
+                  onKeyDown={(event: ReactKeyboardEvent<HTMLButtonElement>) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
+                      void handlePadPress(pad);
+                    }
                   }}
-                  onTouchEnd={(e) => {
-                    e.preventDefault();
-                    stopChord(chord);
+                  onKeyUp={(event: ReactKeyboardEvent<HTMLButtonElement>) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
+                      handlePadRelease(pad);
+                    }
                   }}
                 >
-                  <span className="pad-label">{chord.label}</span>
-                  <span className="pad-name">{chord.name}</span>
-                  <span className="pad-key">{chord.keyLabel}</span>
+                  <span className="pad-index">{pad.keyBinding.label}</span>
+                  <span className="pad-label">{pad.roman}</span>
+                  <span className="pad-name">{pad.chordName}</span>
                 </button>
               ))}
             </div>
