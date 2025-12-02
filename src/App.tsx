@@ -26,7 +26,7 @@ type Tonic =
   | 'A#'
   | 'B';
 
-type InstrumentId = 'piano' | 'epiano' | 'synth';
+type InstrumentId = 'piano' | 'epiano' | 'synth' | 'violin' | 'guitar';
 
 type InstrumentOption = {
   id: InstrumentId;
@@ -72,27 +72,34 @@ const TONE_INSTRUMENTS: InstrumentOption[] = [
   { id: 'piano', label: 'Piano' },
   { id: 'epiano', label: 'E.Piano' },
   { id: 'synth', label: 'Synth' },
+  { id: 'violin', label: 'Violin' },
+  { id: 'guitar', label: 'Guitar' },
 ];
 
-const KEY_CENTER: KeyOption = { id: 'C', label: 'C' };
-
-const KEY_RIGHT_SIDE: KeyOption[] = [
-  { id: 'C#', label: 'Db' },
+const KEY_OPTIONS: KeyOption[] = [
+  { id: 'F#', label: 'F#' },
+  { id: 'G', label: 'G' },
+  { id: 'G#', label: 'G#' },
+  { id: 'A', label: 'A' },
+  { id: 'A#', label: 'A#' },
+  { id: 'B', label: 'B' },
+  { id: 'C', label: 'C' },
+  { id: 'C#', label: 'C#' },
   { id: 'D', label: 'D' },
-  { id: 'D#', label: 'Eb' },
+  { id: 'D#', label: 'D#' },
   { id: 'E', label: 'E' },
   { id: 'F', label: 'F' },
 ];
 
-const KEY_LEFT_SIDE: KeyOption[] = [
-  { id: 'F#', label: 'Gb' },
-  { id: 'G', label: 'G' },
-  { id: 'G#', label: 'Ab' },
-  { id: 'A', label: 'A' },
-  { id: 'A#', label: 'Bb' },
-];
-
 const KEY_BINDINGS: KeyBinding[] = [
+  { key: '1', label: '1' },
+  { key: '2', label: '2' },
+  { key: '3', label: '3' },
+  { key: '4', label: '4' },
+  { key: '5', label: '5' },
+  { key: '6', label: '6' },
+  { key: '7', label: '7' },
+  { key: '8', label: '8' },
   { key: 'q', label: 'Q' },
   { key: 'w', label: 'W' },
   { key: 'e', label: 'E' },
@@ -101,8 +108,6 @@ const KEY_BINDINGS: KeyBinding[] = [
   { key: 'y', label: 'Y' },
   { key: 'u', label: 'U' },
   { key: 'i', label: 'I' },
-  { key: 'o', label: 'O' },
-  { key: 'p', label: 'P' },
   { key: 'a', label: 'A' },
   { key: 's', label: 'S' },
   { key: 'd', label: 'D' },
@@ -111,7 +116,6 @@ const KEY_BINDINGS: KeyBinding[] = [
   { key: 'h', label: 'H' },
   { key: 'j', label: 'J' },
   { key: 'k', label: 'K' },
-  { key: 'l', label: 'L' },
   { key: 'z', label: 'Z' },
   { key: 'x', label: 'X' },
   { key: 'c', label: 'C' },
@@ -119,12 +123,7 @@ const KEY_BINDINGS: KeyBinding[] = [
   { key: 'b', label: 'B' },
   { key: 'n', label: 'N' },
   { key: 'm', label: 'M' },
-  { key: 'Q', label: '⇧Q' },
-  { key: 'W', label: '⇧W' },
-  { key: 'E', label: '⇧E' },
-  { key: 'R', label: '⇧R' },
-  { key: 'T', label: '⇧T' },
-  { key: 'Y', label: '⇧Y' },
+  { key: ',', label: ',' },
 ];
 
 const NOTE_NAMES_SHARP = [
@@ -181,7 +180,7 @@ const PAD_DEFINITIONS: PadDefinition[] = [
   },
   {
     id: 'pad-02',
-    roman: 'ii',
+    roman: 'II',
     group: 'diatonic',
     rootOffset: 2,
     intervals: [0, 3, 7],
@@ -189,7 +188,7 @@ const PAD_DEFINITIONS: PadDefinition[] = [
   },
   {
     id: 'pad-03',
-    roman: 'iii',
+    roman: 'III',
     group: 'diatonic',
     rootOffset: 4,
     intervals: [0, 3, 7],
@@ -211,7 +210,7 @@ const PAD_DEFINITIONS: PadDefinition[] = [
   },
   {
     id: 'pad-06',
-    roman: 'vi',
+    roman: 'VI',
     group: 'diatonic',
     rootOffset: 9,
     intervals: [0, 3, 7],
@@ -219,7 +218,7 @@ const PAD_DEFINITIONS: PadDefinition[] = [
   },
   {
     id: 'pad-07',
-    roman: 'vii°',
+    roman: 'VII°',
     group: 'diatonic',
     rootOffset: 11,
     intervals: [0, 3, 6],
@@ -243,7 +242,7 @@ const PAD_DEFINITIONS: PadDefinition[] = [
   },
   {
     id: 'pad-10',
-    roman: 'V/ii',
+    roman: 'V/II',
     group: 'secondary',
     rootOffset: 9,
     intervals: [0, 4, 7, 10],
@@ -251,7 +250,7 @@ const PAD_DEFINITIONS: PadDefinition[] = [
   },
   {
     id: 'pad-11',
-    roman: 'V/iii',
+    roman: 'V/III',
     group: 'secondary',
     rootOffset: 11,
     intervals: [0, 4, 7, 10],
@@ -275,7 +274,7 @@ const PAD_DEFINITIONS: PadDefinition[] = [
   },
   {
     id: 'pad-14',
-    roman: 'V/vi',
+    roman: 'V/VI',
     group: 'secondary',
     rootOffset: 4,
     intervals: [0, 4, 7, 10],
@@ -283,7 +282,7 @@ const PAD_DEFINITIONS: PadDefinition[] = [
   },
   {
     id: 'pad-15',
-    roman: 'V/iii(alt)',
+    roman: 'V/III(alt)',
     group: 'secondary',
     rootOffset: 11,
     intervals: [0, 4, 7, 10],
@@ -299,7 +298,7 @@ const PAD_DEFINITIONS: PadDefinition[] = [
   },
   {
     id: 'pad-17',
-    roman: 'iv',
+    roman: 'IV',
     group: 'subMinor',
     rootOffset: 5,
     intervals: [0, 3, 7],
@@ -307,7 +306,7 @@ const PAD_DEFINITIONS: PadDefinition[] = [
   },
   {
     id: 'pad-18',
-    roman: 'iv6',
+    roman: 'IV6',
     group: 'subMinor',
     rootOffset: 5,
     intervals: [0, 3, 7, 9],
@@ -331,7 +330,7 @@ const PAD_DEFINITIONS: PadDefinition[] = [
   },
   {
     id: 'pad-21',
-    roman: '#i°',
+    roman: '#I°',
     group: 'subMinor',
     rootOffset: 1,
     intervals: [0, 3, 6],
@@ -340,7 +339,7 @@ const PAD_DEFINITIONS: PadDefinition[] = [
   },
   {
     id: 'pad-22',
-    roman: 'ii°',
+    roman: 'II°',
     group: 'subMinor',
     rootOffset: 2,
     intervals: [0, 3, 6],
@@ -348,7 +347,7 @@ const PAD_DEFINITIONS: PadDefinition[] = [
   },
   {
     id: 'pad-23',
-    roman: '#iv°',
+    roman: '#IV°',
     group: 'subMinor',
     rootOffset: 6,
     intervals: [0, 3, 6],
@@ -422,7 +421,7 @@ const PAD_DEFINITIONS: PadDefinition[] = [
   },
   {
     id: 'pad-32',
-    roman: 'vi(add11)',
+    roman: 'VI(add11)',
     group: 'pop',
     rootOffset: 9,
     intervals: [0, 3, 5, 7],
@@ -452,7 +451,7 @@ const midiToNoteId = (
   return `${letter}${octave}`;
 };
 
-const LOW_TONIC_RANGE: Tonic[] = ['F#', 'G', 'G#', 'A', 'A#'];
+const LOW_TONIC_RANGE: Tonic[] = ['F#', 'G', 'G#', 'A', 'A#', 'B'];
 
 const buildPads = (tonic: Tonic): PadBase[] => {
   const tonicBaseMidi = TONIC_TO_MIDI4[tonic];
@@ -481,6 +480,18 @@ const buildPads = (tonic: Tonic): PadBase[] => {
 
 const createInstrument = (instrument: InstrumentId): Tone.PolySynth => {
   switch (instrument) {
+    case 'violin':
+      return new Tone.PolySynth(Tone.Synth, {
+        volume: -9,
+        oscillator: { type: 'triangle' },
+        envelope: { attack: 0.12, decay: 0.3, sustain: 0.8, release: 1.6 },
+      }).toDestination();
+    case 'guitar':
+      return new Tone.PolySynth(Tone.Synth, {
+        volume: -8,
+        oscillator: { type: 'square' },
+        envelope: { attack: 0.008, decay: 0.25, sustain: 0.4, release: 0.9 },
+      }).toDestination();
     case 'epiano':
       return new Tone.PolySynth(Tone.Synth, {
         volume: -10,
@@ -585,14 +596,18 @@ function App() {
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      const pad = pads.find((item) => item.keyBinding.key === event.key);
+      const pressedKey =
+        event.key.length === 1 ? event.key.toLowerCase() : event.key;
+      const pad = pads.find((item) => item.keyBinding.key === pressedKey);
       if (!pad) return;
       event.preventDefault();
       void handlePadPress(pad);
     };
 
     const handleKeyUp = (event: KeyboardEvent) => {
-      const pad = pads.find((item) => item.keyBinding.key === event.key);
+      const releasedKey =
+        event.key.length === 1 ? event.key.toLowerCase() : event.key;
+      const pad = pads.find((item) => item.keyBinding.key === releasedKey);
       if (!pad) return;
       event.preventDefault();
       handlePadRelease(pad);
@@ -635,33 +650,8 @@ function App() {
                 <span className="panel-value">{tonic}</span>
               </div>
               <div className="key-selector">
-                <div className="key-side key-side--left">
-                  {KEY_LEFT_SIDE.map((key) => (
-                    <button
-                      key={key.id}
-                      type="button"
-                      className={`pill-button${
-                        tonic === key.id ? ' pill-button--active' : ''
-                      }`}
-                      onClick={() => setTonic(key.id)}
-                    >
-                      {key.label}
-                    </button>
-                  ))}
-                </div>
-                <div className="key-center">
-                  <button
-                    type="button"
-                    className={`pill-button${
-                      tonic === KEY_CENTER.id ? ' pill-button--active' : ''
-                    }`}
-                    onClick={() => setTonic(KEY_CENTER.id)}
-                  >
-                    {KEY_CENTER.label}
-                  </button>
-                </div>
-                <div className="key-side key-side--right">
-                  {KEY_RIGHT_SIDE.map((key) => (
+                <div className="key-grid">
+                  {KEY_OPTIONS.map((key) => (
                     <button
                       key={key.id}
                       type="button"
