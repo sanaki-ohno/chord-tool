@@ -529,10 +529,7 @@ const minNoteTicks = useMemo(
       });
     });
     const midiArray = midi.toArray();
-    const midiBuffer = midiArray.buffer.slice(
-      midiArray.byteOffset,
-      midiArray.byteOffset + midiArray.byteLength
-    );
+    const midiBuffer = midiArray.slice().buffer;
     const midiBlob = new Blob([midiBuffer], { type: 'audio/midi' });
     triggerDownload(`codesampler-${Date.now()}.mid`, midiBlob);
   }, [currentTake]);
