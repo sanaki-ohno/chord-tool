@@ -1,20 +1,21 @@
 // src/components/layout/AppShell.tsx - 画面全体を包むレイアウトシェル
 import type { PropsWithChildren } from 'react';
+import styles from '../../styles/layout/AppLayout.module.css';
 
 export const AppShell = ({ children }: PropsWithChildren) => {
   return (
-    <div className="app">
-      <div className="app-shell">
-        <header className="app-hero">
-          <div className="hero-brand">
-            <div className="logo">CodeSampler</div>
-            <div className="hero-meta">
-              <span className="hero-chip">Chord Lab</span>
-              <span className="hero-chip">32 Pad Grid</span>
+    <div className={styles.app}>
+      <div className={styles.appShell}>
+        <header className={styles.appHero}>
+          <div className={styles.heroBrand}>
+            <div className={styles.logo}>CodeSampler</div>
+            <div className={styles.heroMeta}>
+              <span className={styles.heroChip}>Chord Lab</span>
+              <span className={styles.heroChip}>32 Pad Grid</span>
             </div>
           </div>
-          <div className="hero-status">
-            <span className="status-dot" />
+          <div className={styles.heroStatus}>
+            <span className={styles.statusDot} />
             <span>ONLINE</span>
           </div>
         </header>

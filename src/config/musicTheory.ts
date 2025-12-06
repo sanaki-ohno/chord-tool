@@ -1,3 +1,4 @@
+// src/config/musicTheory.ts - 音楽理論関連の定数とユーティリティ
 import type { PadBase, PadDefinition, Tonic } from '../types/music';
 
 export const NOTE_NAMES_SHARP = [

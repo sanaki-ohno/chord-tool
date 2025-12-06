@@ -1,3 +1,4 @@
+// src/config/keyOptions.ts - キー/キーバインド/楽器オプション設定
 import { PAD_DEFINITIONS } from './musicTheory';
 import type {
   InstrumentOption,

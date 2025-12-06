@@ -1,3 +1,4 @@
+// src/hooks/useChordPads.ts - パッド生成と入力管理ロジック
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import * as Tone from 'tone';
 import { KEY_BINDINGS } from '../config/keyOptions';
@@ -25,6 +26,10 @@ type UseChordPadsParams = {
   synth: Tone.PolySynth | null;
   startAudioContext: () => Promise<void>;
   layoutConfig?: PadLayoutConfig;
+  padEventHandlers?: {
+    onPadPress?: (pad: Pad) => void;
+    onPadRelease?: (pad: Pad) => void;
+  };
 };
 
 export const useChordPads = ({
@@ -32,6 +37,7 @@ export const useChordPads = ({
   synth,
   startAudioContext,
   layoutConfig,
+  padEventHandlers,
 }: UseChordPadsParams) => {
   const { padDefinitions, keyBindings } = useMemo(
     () => normalizeLayoutConfig(layoutConfig),
@@ -69,8 +75,9 @@ export const useChordPads = ({
       setActivePadIds((prev) =>
         prev.includes(pad.id) ? prev : [...prev, pad.id]
       );
+      padEventHandlers?.onPadPress?.(pad);
     },
-    [synth, startAudioContext]
+    [synth, startAudioContext, padEventHandlers]
   );
 
   const handlePadRelease = useCallback(
@@ -80,12 +87,19 @@ export const useChordPads = ({
       pad.notes.forEach((note) => synth.triggerRelease(note, Tone.now()));
       delete heldPadsRef.current[pad.id];
       setActivePadIds((prev) => prev.filter((id) => id !== pad.id));
+      padEventHandlers?.onPadRelease?.(pad);
     },
-    [synth]
+    [synth, padEventHandlers]
   );
 
   useEffect(() => {
+    const shouldBlockKeypress = (target: EventTarget | null) => {
+      if (!(target instanceof HTMLElement)) return false;
+      return target.dataset.padInputLock === 'true';
+    };
+
     const handleKeyDown = (event: KeyboardEvent) => {
+      if (shouldBlockKeypress(event.target)) return;
       const pressedKey =
         event.key.length === 1 ? event.key.toLowerCase() : event.key;
       const pad = padMap[pressedKey];
@@ -95,6 +109,7 @@ export const useChordPads = ({
     };
 
     const handleKeyUp = (event: KeyboardEvent) => {
+      if (shouldBlockKeypress(event.target)) return;
       const releasedKey =
         event.key.length === 1 ? event.key.toLowerCase() : event.key;
       const pad = padMap[releasedKey];
