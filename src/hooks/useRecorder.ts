@@ -528,7 +528,7 @@ const minNoteTicks = useMemo(
         });
       });
     });
-    const midiBlob = new Blob([midi.toArray()], { type: 'audio/midi' });
+    const midiBlob = new Blob([midi.toArray() as Uint8Array], { type: 'audio/midi' });
     triggerDownload(`codesampler-${Date.now()}.mid`, midiBlob);
   }, [currentTake]);
 
