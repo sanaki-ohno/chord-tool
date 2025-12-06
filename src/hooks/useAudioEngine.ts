@@ -1,3 +1,4 @@
+// src/hooks/useAudioEngine.ts - Tone.jsポリシンセの生成とライフサイクル管理
 import { useCallback, useEffect, useRef, useState } from 'react';
 import * as Tone from 'tone';
 import type { InstrumentId } from '../types/music';

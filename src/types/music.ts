@@ -1,3 +1,4 @@
+// src/types/music.ts - 音階/楽器/パッドに関する型定義
 export type Tonic =
   | 'C'
   | 'C#'

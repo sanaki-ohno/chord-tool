@@ -5,6 +5,14 @@ import {
   type TouchEvent,
 } from 'react';
 import type { Pad } from '../../types/music';
+import styles from '../../styles/pads/PadPanel.module.css';
+
+const PAD_GROUP_CLASS: Record<Pad['group'], string> = {
+  diatonic: styles.padDiatonic,
+  secondary: styles.padSecondary,
+  subMinor: styles.padSubMinor,
+  pop: styles.padPop,
+};
 
 type PadButtonProps = {
   pad: Pad;
@@ -47,10 +55,18 @@ export const PadButton = ({
     }
   };
 
+  const buttonClassName = [
+    styles.pad,
+    PAD_GROUP_CLASS[pad.group],
+    isActive ? styles.padActive : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
+
   return (
     <button
       type="button"
-      className={`pad pad--${pad.group}${isActive ? ' is-active' : ''}`}
+      className={buttonClassName}
       aria-pressed={isActive}
       onMouseDown={handlePointerDown}
       onMouseUp={handlePointerUp}
@@ -61,9 +77,9 @@ export const PadButton = ({
       onKeyDown={handleKeyDown}
       onKeyUp={handleKeyUp}
     >
-      <span className="pad-index">{pad.keyBinding.label}</span>
-      <span className="pad-label">{pad.roman}</span>
-      <span className="pad-name">{pad.chordName}</span>
+      <span className={styles.padIndex}>{pad.keyBinding.label}</span>
+      <span className={styles.padLabel}>{pad.roman}</span>
+      <span className={styles.padName}>{pad.chordName}</span>
     </button>
   );
 };

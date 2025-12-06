@@ -1,5 +1,4 @@
 // src/App.tsx - ルートコンポーネント（将来のルーティング入口）
-import './App.css';
 import { HomePage } from './pages/HomePage';
 
 function App() {

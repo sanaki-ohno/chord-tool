@@ -1,3 +1,4 @@
+// vite.config.ts - Viteの開発/ビルド設定
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 

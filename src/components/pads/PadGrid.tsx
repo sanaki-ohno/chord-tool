@@ -1,5 +1,6 @@
 // src/components/pads/PadGrid.tsx - 32個のパッドを並べるラッパー
 import type { Pad } from '../../types/music';
+import styles from '../../styles/pads/PadPanel.module.css';
 import { PadButton } from './PadButton';
 
 type PadGridProps = {
@@ -16,12 +17,12 @@ export const PadGrid = ({
   onPadRelease,
 }: PadGridProps) => {
   return (
-    <section className="pad-panel">
-      <div className="pad-panel-header">
-        <span className="panel-label">Chord Pads</span>
-        <span className="panel-value">{pads.length} slots</span>
+    <section className={styles.padPanel}>
+      <div className={styles.padPanelHeader}>
+        <span className={styles.panelLabel}>Chord Pads</span>
+        <span className={styles.panelValue}>{pads.length} slots</span>
       </div>
-      <div className="pad-grid">
+      <div className={styles.padGrid}>
         {pads.map((pad) => (
           <PadButton
             key={pad.id}

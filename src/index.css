@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Syncopate:wght@400;700&display=swap');
+
 :root {
   font-family: "Chivo Mono", "Share Tech Mono", "Segoe UI", sans-serif;
   line-height: 1.5;
@@ -8,6 +10,21 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  --shell-bg: #111720;
+  --shell-edge: #1b2430;
+  --shell-highlight: #202a38;
+  --shell-slit: rgba(255, 255, 255, 0.05);
+  --text-main: #f2f6ff;
+  --text-muted: #7b8595;
+  --led-green: #6ef7b2;
+  --led-amber: #ffc561;
+  --led-blue: #7cc5ff;
+  --pad-metal: linear-gradient(130deg, #1e2633, #0f141d);
+  --pad-metal-press: linear-gradient(130deg, #121722, #080b11);
+  --font-condensed: "Orbitron", sans-serif;
+  --font-logo: "Syncopate", "Orbitron", sans-serif;
+  --font-label: "Chivo Mono", "Share Tech Mono", "Segoe UI", sans-serif;
+  /* --pad-border: rgba(255, 255, 255, 0.12); */
 }
 
 *,

@@ -1,0 +1,235 @@
+.padPanel {
+  border-radius: 12px;
+  padding: clamp(14px, 2.8vw, 24px);
+  background: #070b10;
+  border: 1px solid #0d141b;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 18px 28px rgba(0, 0, 0, 0.6);
+}
+
+.padPanelHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.panelLabel {
+  letter-spacing: 0.36em;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.panelValue {
+  font-size: 0.95rem;
+  letter-spacing: 0.12em;
+  color: var(--text-main);
+}
+
+.padGrid {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.pad {
+  --pad-led: rgba(255, 255, 255, 0.08);
+  --pad-led-active: var(--led-amber);
+  --pad-glow: rgba(255, 255, 255, 0.08);
+  position: relative;
+  border-radius: 10px;
+  padding: 20px 12px;
+  aspect-ratio: 1 / 1;
+  background:
+    linear-gradient(185deg, rgba(32, 40, 54, 0.9), rgba(10, 14, 20, 0.92)),
+    var(--pad-metal);
+  border: 1px solid var(--pad-border);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.07),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.45),
+    0 12px 16px rgba(0, 0, 0, 0.45);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-align: center;
+  color: var(--text-main);
+  transition:
+    transform 0.12s ease,
+    box-shadow 0.12s ease,
+    border-color 0.12s ease;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: manipulation;
+}
+
+.pad::before {
+  content: "";
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 6px;
+  height: 16px;
+  border-radius: 10px;
+  background: radial-gradient(ellipse at center, var(--pad-glow) 0%, transparent 70%);
+  filter: blur(8px);
+  opacity: 0.9;
+  pointer-events: none;
+}
+
+.pad::after {
+  content: "";
+  position: absolute;
+  bottom: 9px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--pad-led);
+  box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.6);
+  transition: background 0.1s ease, box-shadow 0.1s ease;
+}
+
+.pad:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 20px 20px rgba(0, 0, 0, 0.55),
+    0 0 50px var(--pad-glow);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.pad:active {
+  transform: translateY(1px);
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow:
+    inset 0 -8px 14px rgba(0, 0, 0, 0.55),
+    0 12px 16px rgba(0, 0, 0, 0.4),
+    0 0 80px var(--pad-glow);
+}
+
+.pad:active::after {
+  background: var(--pad-led-active);
+  box-shadow:
+    0 0 10px rgba(255, 255, 255, 0.4),
+    inset 0 1px 0 rgba(255, 255, 220, 0.8);
+}
+
+.padActive {
+  transform: translateY(1px);
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow:
+    inset 0 -8px 14px rgba(0, 0, 0, 0.55),
+    0 12px 16px rgba(0, 0, 0, 0.4),
+    0 0 80px var(--pad-glow);
+}
+
+.padActive::after {
+  background: var(--pad-led-active);
+  box-shadow:
+    0 0 10px rgba(255, 255, 255, 0.4),
+    inset 0 1px 0 rgba(255, 255, 220, 0.8);
+}
+
+.padIndex {
+  position: absolute;
+  top: 10px;
+  right: 14px;
+  font-size: 0.55rem;
+  letter-spacing: 0.25em;
+  color: rgba(255, 255, 255, 0.38);
+}
+
+.padLabel {
+  font-size: 0.9rem;
+}
+
+.padName {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.padDiatonic {
+  --pad-led: rgba(255, 102, 102, 0.18);
+  --pad-led-active: #ff6b6b;
+  --pad-glow: rgba(255, 90, 90, 0.55);
+}
+
+.padSecondary {
+  --pad-led: rgba(255, 159, 89, 0.18);
+  --pad-led-active: #ff9955;
+  --pad-glow: rgba(255, 140, 80, 0.5);
+}
+
+.padSubMinor {
+  --pad-led: rgba(110, 247, 178, 0.18);
+  --pad-led-active: #6ef7b2;
+  --pad-glow: rgba(110, 247, 178, 0.5);
+}
+
+.padPop {
+  --pad-led: rgba(124, 197, 255, 0.18);
+  --pad-led-active: #73bfff;
+  --pad-glow: rgba(116, 170, 255, 0.5);
+}
+
+@media (max-width: 900px) {
+  .padPanel {
+    padding: 18px;
+  }
+
+  .padGrid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+  }
+}
+
+@media (max-width: 640px) {
+  .padPanel {
+    padding: 12px;
+  }
+
+  .padGrid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+  }
+}
+
+@media (max-width: 580px) {
+  .pad {
+    padding: 16px 10px;
+  }
+
+  .padGrid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .pad {
+    padding: 15px 8px;
+  }
+
+  .padGrid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 6px;
+  }
+}
+
+@media (max-width: 420px) {
+  .pad {
+    padding: 14px 6px;
+  }
+
+  .padLabel {
+    font-size: 0.82rem;
+  }
+
+  .padName {
+    font-size: 0.7rem;
+  }
+}
