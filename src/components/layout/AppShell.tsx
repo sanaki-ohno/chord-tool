@@ -1,5 +1,6 @@
 // src/components/layout/AppShell.tsx - 画面全体を包むレイアウトシェル
 import type { PropsWithChildren } from 'react';
+import { AccountButton } from '../auth/AccountButton';
 import styles from '../../styles/layout/AppLayout.module.css';
 
 export const AppShell = ({ children }: PropsWithChildren) => {
@@ -14,9 +15,12 @@ export const AppShell = ({ children }: PropsWithChildren) => {
               <span className={styles.heroChip}>32 Pad Grid</span>
             </div>
           </div>
-          <div className={styles.heroStatus}>
-            <span className={styles.statusDot} />
-            <span>ONLINE</span>
+          <div className={styles.heroControls}>
+            <div className={styles.heroStatus}>
+              <span className={styles.statusDot} />
+              <span>ONLINE</span>
+            </div>
+            <AccountButton />
           </div>
         </header>
         {children}

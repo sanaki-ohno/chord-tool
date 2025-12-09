@@ -1,0 +1,186 @@
+.accountWrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.accountButton {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(5, 8, 12, 0.8);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+  color: #f5faff;
+  font-family: var(--font-condensed);
+  font-size: 1rem;
+  letter-spacing: 0.08em;
+}
+
+.accountButton:hover:not(:disabled) {
+  border-color: var(--led-blue);
+  box-shadow: 0 0 10px rgba(92, 186, 255, 0.4);
+  transform: translateY(-1px);
+}
+
+.accountButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.icon {
+  width: 24px;
+  height: 24px;
+  display: block;
+}
+
+.initials {
+  font-weight: 600;
+}
+
+.popover {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  min-width: 240px;
+  padding: 20px;
+  border-radius: 18px;
+  background: linear-gradient(150deg, #04070c, #09101c);
+  border: 1px solid rgba(124, 197, 255, 0.2);
+  box-shadow:
+    0 22px 40px rgba(5, 8, 12, 0.75),
+    inset 0 1px 0 rgba(124, 197, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  z-index: 30;
+  overflow: hidden;
+  isolation: isolate;
+  backdrop-filter: blur(16px);
+}
+
+.popoverAura {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+  background:
+    radial-gradient(circle at 18% -20%, rgba(99, 156, 228, 0.35), transparent 55%),
+    radial-gradient(circle at 84% 120%, rgba(243, 126, 79, 0.32), transparent 60%);
+  filter: blur(22px);
+}
+
+.popoverHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.popoverLabel {
+  font-family: var(--font-condensed);
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  font-size: 0.58rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.popoverValue {
+  font-size: 0.85rem;
+  color: var(--text-main);
+  word-break: break-all;
+}
+
+.popoverChecklist {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.popoverChecklist li {
+  list-style: disc;
+}
+
+.popoverSupporting {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.7);
+  line-height: 1.3;
+}
+
+.popoverActions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.popoverButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(124, 197, 255, 0.16);
+  background: rgba(6, 9, 15, 0.85);
+  color: #f3f7ff;
+  padding: 0.5rem 0.75rem;
+  font-family: var(--font-condensed);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: border-color 0.12s ease, background 0.12s ease;
+}
+
+.popoverButton:hover:not(:disabled) {
+  border-color: rgba(124, 197, 255, 0.5);
+  background: rgba(7, 11, 18, 0.95);
+}
+
+.popoverButton:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.googleButton {
+  background: #fff;
+  border: 1px solid #dadce0;
+  color: #3c4043;
+  text-transform: none;
+  letter-spacing: 0;
+  font-family: var(--font-label);
+  font-weight: 500;
+  font-size: 0.95rem;
+  box-shadow:
+    0 1px 1px rgba(0, 0, 0, 0.1),
+    0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.googleButton:hover {
+  border-color: #dadce0;
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.2),
+    0 1px 3px rgba(0, 0, 0, 0.16);
+  transform: none;
+}
+
+.googleButtonIcon {
+  width: 18px;
+  height: 18px;
+  display: block;
+}
+
+.googleButtonLabel {
+  white-space: nowrap;
+}
+
+.popoverButtonSecondary {
+  border-color: rgba(124, 197, 255, 0.2);
+  background: rgba(8, 11, 18, 0.9);
+}

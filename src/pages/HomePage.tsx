@@ -87,6 +87,7 @@ export const HomePage = () => {
             onPlay={recorder.handlePlayPressed}
             onStop={recorder.handleStopPressed}
             onDownload={recorder.downloadCurrentTake}
+            onClearRecording={recorder.clearRecording}
           />
         </aside>
         <section className={layoutStyles.padArea}>

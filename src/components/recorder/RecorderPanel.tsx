@@ -1,7 +1,9 @@
 // src/components/recorder/RecorderPanel.tsx - 録音制御パネル
-import { useEffect, useState, type ChangeEvent, type KeyboardEvent } from 'react';
+import { useEffect, useRef, useState, type ChangeEvent, type KeyboardEvent } from 'react';
+import { useAuth } from '../../context/AuthContext';
 import type { TimeSignature, TransportState } from '../../types/recorder';
 import styles from '../../styles/recorder/RecorderPanel.module.css';
+import googleIcon from '../../assets/icon_google.svg';
 
 const formatTimeSignature = (sig: TimeSignature) => `${sig.numerator}/${sig.denominator}`;
 const BPM_MIN = 1;
@@ -22,6 +24,7 @@ type RecorderPanelProps = {
   onPlay: () => void;
   onStop: () => void;
   onDownload: () => void;
+  onClearRecording?: () => void;
 };
 
 export const RecorderPanel = ({
@@ -38,7 +41,9 @@ export const RecorderPanel = ({
   onPlay,
   onStop,
   onDownload,
+  onClearRecording,
 }: RecorderPanelProps) => {
+  const { user, signInWithGoogle } = useAuth();
   const isCapturing =
     transportState === 'recording' || transportState === 'count-in';
   const disableTempoControls = isCapturing;
@@ -60,6 +65,7 @@ export const RecorderPanel = ({
   const isPlayingBack = transportState === 'playing';
   const [bpmInput, setBpmInput] = useState(() => bpm.toString());
   const [bpmError, setBpmError] = useState<string | null>(null);
+  const [showLoginModal, setShowLoginModal] = useState(false);
 
   useEffect(() => {
     setBpmInput(bpm.toString());
@@ -107,6 +113,32 @@ export const RecorderPanel = ({
     );
     if (next) onTimeSignatureChange(next);
   };
+
+  const handleDownloadClick = () => {
+    if (downloadDisabled) return;
+    if (!user) {
+      setShowLoginModal(true);
+      return;
+    }
+    onDownload();
+  };
+
+  const handleModalClose = () => {
+    setShowLoginModal(false);
+  };
+
+  const handleModalSignIn = async () => {
+    await signInWithGoogle();
+    setShowLoginModal(false);
+  };
+
+  const prevUserRef = useRef(user);
+  useEffect(() => {
+    if (!user && prevUserRef.current) {
+      onClearRecording?.();
+    }
+    prevUserRef.current = user;
+  }, [user, onClearRecording]);
 
   return (
     <section className={styles.recorderPanel} aria-live="polite">
@@ -202,11 +234,48 @@ export const RecorderPanel = ({
       <button
         type="button"
         className={styles.downloadButton}
-        onClick={onDownload}
+        onClick={handleDownloadClick}
         disabled={downloadDisabled}
       >
-        Download
+        Download MIDI
       </button>
+      {showLoginModal && (
+        <div className={styles.loginModalOverlay} role="dialog" aria-modal="true">
+          <div className={styles.loginModal}>
+            <div className={styles.loginModalHero}>
+              <div className={styles.loginModalBadge}>Recorder cloud</div>
+            </div>
+            <div className={styles.loginModalBody}>
+              <p className={styles.loginModalEyebrow}>MIDI EXPORT</p>
+              <h3>Sign in to download</h3>
+              <p className={styles.loginModalCopy}>
+                Connect your Google account to unlock the Download button and export this take as
+                MIDI.
+              </p>
+              <p className={styles.loginModalFootnote}>
+                Recording and editing remain available without signing in.
+              </p>
+            </div>
+            <div className={styles.modalActions}>
+              <button
+                type="button"
+                className={`${styles.modalButton} ${styles.googleButton}`}
+                onClick={handleModalSignIn}
+              >
+                <img src={googleIcon} alt="" aria-hidden className={styles.googleButtonIcon} />
+                <span className={styles.googleButtonLabel}>Sign in with Google</span>
+              </button>
+              <button
+                type="button"
+                className={`${styles.modalButton} ${styles.modalButtonSecondary}`}
+                onClick={handleModalClose}
+              >
+                Not now
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 };

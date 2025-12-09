@@ -92,6 +92,12 @@
   max-width: 560px;
 }
 
+.heroControls {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
 .heroMeta {
   display: flex;
   flex-wrap: wrap;
@@ -183,6 +189,11 @@
 
   .padArea {
     flex-direction: column-reverse;
+  }
+
+  .heroControls {
+    width: 100%;
+    justify-content: space-between;
   }
 }
 

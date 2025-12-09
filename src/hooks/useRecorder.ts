@@ -21,6 +21,7 @@ const TIME_SIGNATURE_OPTIONS: TimeSignature[] = [
 const MAX_BARS = 16;
 const MIN_NOTE_DENOMINATOR = 16; // 1/16 note minimum
 const DEFAULT_COUNT_IN_BARS = 1;
+const RECORDING_STORAGE_KEY = 'codesampler:last-take';
 
 const createRecordingSkeleton = (
   bpm: number,
@@ -73,6 +74,33 @@ export const useRecorder = ({ synth, startAudioContext }: UseRecorderParams) => 
   const countInEventIdRef = useRef<number | null>(null);
   const playbackOffsetRef = useRef(0);
   const activePlaybackNotesRef = useRef<Record<string, string[]>>({});
+
+  const persistRecording = useCallback((recording: Recording | null) => {
+    if (typeof window === 'undefined') return;
+    try {
+      if (!recording) {
+        window.localStorage.removeItem(RECORDING_STORAGE_KEY);
+        return;
+      }
+      window.localStorage.setItem(RECORDING_STORAGE_KEY, JSON.stringify(recording));
+    } catch (error) {
+      console.error('録音データの保存に失敗しました', error);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const raw = window.localStorage.getItem(RECORDING_STORAGE_KEY);
+      if (!raw) return;
+      const stored = JSON.parse(raw) as Recording;
+      if (stored && stored.events) {
+        setCurrentTake(stored);
+      }
+    } catch (error) {
+      console.error('録音データの復元に失敗しました', error);
+    }
+  }, []);
 
   const ticksPerBeat = useMemo(() => {
     const base = Tone.Transport.PPQ;
@@ -231,7 +259,9 @@ const minNoteTicks = useMemo(
       const tempRecording = tempRecordingRef.current;
       if (tempRecording) {
         tempRecording.totalTicks = Math.min(endTicks, maxTicks);
-        setCurrentTake({ ...tempRecording, events: [...tempRecording.events] });
+        const nextTake = { ...tempRecording, events: [...tempRecording.events] };
+        setCurrentTake(nextTake);
+        persistRecording(nextTake);
       }
     } else {
       tempRecordingRef.current = null;
@@ -253,6 +283,7 @@ const minNoteTicks = useMemo(
     clearCountInEvent,
     stopMetronome,
     releaseActivePlaybackNotes,
+    persistRecording,
   ]);
 
   const startRecording = useCallback(async () => {
@@ -534,6 +565,11 @@ const minNoteTicks = useMemo(
     triggerDownload(`codesampler-${Date.now()}.mid`, midiBlob);
   }, [currentTake]);
 
+  const clearRecording = useCallback(() => {
+    setCurrentTake(null);
+    persistRecording(null);
+  }, [persistRecording]);
+
   const hasTake = Boolean(currentTake);
 
   return {
@@ -551,6 +587,7 @@ const minNoteTicks = useMemo(
     downloadCurrentTake,
     handlePadPress,
     handlePadRelease,
+    clearRecording,
     availableSignatures: TIME_SIGNATURE_OPTIONS,
   } as const;
 };
