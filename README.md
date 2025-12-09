@@ -71,3 +71,8 @@ export default defineConfig([
   },
 ])
 ```
+
+## Deployment notes
+
+- ローカル/本番ともに `VITE_SUPABASE_URL` と `VITE_SUPABASE_ANON_KEY` を `.env`（Vercel の場合は Project Settings > Environment Variables）に設定する。
+- PR の Preview デプロイを作り直したい場合は軽微な変更（例: ドキュメント修正）をコミットし、対象ブランチへ `git push` すると自動で新しい Preview が生成される。
