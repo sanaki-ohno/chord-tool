@@ -1,5 +1,11 @@
 // src/config/musicTheory.ts - 音楽理論関連の定数とユーティリティ
-import type { PadBase, PadDefinition, Tonic } from '../types/music';
+import type {
+  PadAssignment,
+  PadBase,
+  PadColor,
+  PadDefinition,
+  Tonic,
+} from '../types/music';
 
 export const NOTE_NAMES_SHARP = [
   'C',
@@ -47,6 +53,62 @@ export const TONIC_TO_MIDI4: Record<Tonic, number> = {
 };
 
 export const LOW_TONIC_RANGE: Tonic[] = ['F#', 'G', 'G#', 'A', 'A#', 'B'];
+
+export const CHORD_TYPE_INTERVALS: Record<string, number[]> = {
+  maj: [0, 4, 7],
+  '6': [0, 4, 7, 9],
+  maj7: [0, 4, 7, 11],
+  maj9: [0, 4, 7, 11, 14],
+  add9: [0, 4, 7, 14],
+  add11: [0, 4, 7, 17],
+  sus2: [0, 2, 7],
+  sus4: [0, 5, 7],
+  aug: [0, 4, 8],
+  aug7: [0, 4, 8, 10],
+  '7': [0, 4, 7, 10],
+  '9': [0, 4, 7, 10, 14],
+  '13': [0, 4, 7, 10, 14, 17, 21],
+  '7sus4': [0, 5, 7, 10],
+  '7b9': [0, 4, 7, 10, 13],
+  '7#9': [0, 4, 7, 10, 15],
+  m: [0, 3, 7],
+  m6: [0, 3, 7, 9],
+  m7: [0, 3, 7, 10],
+  m9: [0, 3, 7, 10, 14],
+  m11: [0, 3, 7, 10, 14, 17],
+  mMaj7: [0, 3, 7, 11],
+  dim: [0, 3, 6],
+  dim7: [0, 3, 6, 9],
+  m7b5: [0, 3, 6, 10],
+};
+
+const CHORD_TYPE_SUFFIX: Record<string, string> = {
+  maj: '',
+  '6': '6',
+  maj7: 'maj7',
+  maj9: 'maj9',
+  add9: 'add9',
+  add11: 'add11',
+  sus2: 'sus2',
+  sus4: 'sus4',
+  aug: 'aug',
+  aug7: 'aug7',
+  '7': '7',
+  '9': '9',
+  '13': '13',
+  '7sus4': '7sus4',
+  '7b9': '7b9',
+  '7#9': '7#9',
+  m: 'm',
+  m6: 'm6',
+  m7: 'm7',
+  m9: 'm9',
+  m11: 'm11',
+  mMaj7: 'mMaj7',
+  dim: 'dim',
+  dim7: 'dim7',
+  m7b5: 'm7b5',
+};
 
 export const PAD_DEFINITIONS: PadDefinition[] = [
   {
@@ -355,6 +417,124 @@ export const buildPads = (
       group: definition.group,
       chordName,
       notes,
+      color: getPadRowColor(definition.id),
     } satisfies PadBase;
   });
+};
+
+const getBaseMidiForTonic = (tonic: Tonic) => {
+  const base = TONIC_TO_MIDI4[tonic];
+  const octaveAdjust = LOW_TONIC_RANGE.includes(tonic) ? -12 : 0;
+  return base + octaveAdjust;
+};
+
+export const getRelativeSemitoneOffset = (base: Tonic, note: Tonic) => {
+  const diff = TONIC_TO_MIDI4[note] - TONIC_TO_MIDI4[base];
+  return ((diff % 12) + 12) % 12;
+};
+
+const resolveRootMidi = (
+  assignment: Extract<PadAssignment, { type: 'custom' }>,
+  currentTonic: Tonic
+) => {
+  const mode = assignment.mode ?? 'relative';
+  if (mode === 'absolute') {
+    return getBaseMidiForTonic(assignment.rootNote);
+  }
+  const offset = getRelativeSemitoneOffset(assignment.baseTonic, assignment.rootNote);
+  return getBaseMidiForTonic(currentTonic) + offset;
+};
+
+const resolveBassMidi = (
+  assignment: Extract<PadAssignment, { type: 'custom' }>,
+  currentTonic: Tonic
+) => {
+  if (!assignment.bassNote) return null;
+  const mode = assignment.mode ?? 'relative';
+  if (mode === 'absolute') {
+    return getBaseMidiForTonic(assignment.bassNote) - 12;
+  }
+  const offset = getRelativeSemitoneOffset(assignment.baseTonic, assignment.bassNote);
+  const tonicBase = getBaseMidiForTonic(currentTonic);
+  const bassBase = tonicBase - 12;
+  return bassBase + offset;
+};
+
+export const buildCustomPadFromAssignment = (
+  assignment: Extract<PadAssignment, { type: 'custom' }>,
+  currentTonic: Tonic,
+  padId: string
+): PadBase => {
+  const rootMidi = resolveRootMidi(assignment, currentTonic);
+  const intervals = CHORD_TYPE_INTERVALS[assignment.chordTypeId] ?? CHORD_TYPE_INTERVALS.maj;
+  const notes = intervals.map((interval) =>
+    midiToNoteId(rootMidi + interval, 'neutral')
+  );
+
+  const bassMidi = resolveBassMidi(assignment, currentTonic);
+  if (bassMidi !== null) {
+    const bassNote = midiToNoteId(bassMidi, 'neutral');
+    if (!notes.includes(bassNote)) {
+      notes.unshift(bassNote);
+    }
+  }
+
+  const rootLabel = getNoteLetter(rootMidi, 'neutral');
+  const suffix = CHORD_TYPE_SUFFIX[assignment.chordTypeId] ?? assignment.chordTypeId;
+  const chordName =
+    bassMidi !== null
+      ? `${rootLabel}${suffix}/${getNoteLetter(bassMidi, 'neutral')}`
+      : `${rootLabel}${suffix}`;
+
+  return {
+    id: padId,
+    roman: '',
+    group: assignment.group,
+    chordName,
+    notes,
+    color: assignment.color ?? getPadRowColor(padId),
+  };
+};
+
+const ROW_COLORS: PadColor[] = ['row1', 'row2', 'row3', 'row4'];
+
+export const getPadRowColor = (padId: string): PadColor => {
+  const index = PAD_DEFINITIONS.findIndex((definition) => definition.id === padId);
+  if (index < 0) return 'row1';
+  const rowIndex = Math.min(3, Math.floor(index / 8));
+  return ROW_COLORS[rowIndex];
+};
+
+const OFFSET_TO_ROMAN: Record<number, string> = {
+  0: 'I',
+  1: 'bII',
+  2: 'II',
+  3: 'bIII',
+  4: 'III',
+  5: 'IV',
+  6: '#IV',
+  7: 'V',
+  8: 'bVI',
+  9: 'VI',
+  10: 'bVII',
+  11: 'VII',
+};
+
+export const getRomanNumeralForOffset = (offset: number): string => {
+  const normalized = ((offset % 12) + 12) % 12;
+  return OFFSET_TO_ROMAN[normalized] ?? 'I';
+};
+
+export const getRomanNumeralForAssignmentNote = (
+  assignment: Extract<PadAssignment, { type: 'custom' }>,
+  currentTonic: Tonic,
+  note?: Tonic
+): string => {
+  const mode = assignment.mode ?? 'relative';
+  const targetNote = note ?? assignment.rootNote;
+  const offset =
+    mode === 'relative'
+      ? getRelativeSemitoneOffset(assignment.baseTonic, targetNote)
+      : getRelativeSemitoneOffset(currentTonic, targetNote);
+  return getRomanNumeralForOffset(offset);
 };

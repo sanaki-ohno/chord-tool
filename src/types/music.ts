@@ -25,6 +25,8 @@ export type KeyOption = {
   label: string;
 };
 
+export type PadColor = 'row1' | 'row2' | 'row3' | 'row4';
+
 export type PadGroup = 'diatonic' | 'secondary' | 'subMinor' | 'pop';
 
 export type PadDefinition = {
@@ -44,6 +46,7 @@ export type PadBase = {
   group: PadGroup;
   chordName: string;
   notes: string[];
+  color: PadColor;
 };
 
 export type KeyBinding = {
@@ -53,6 +56,42 @@ export type KeyBinding = {
 
 export type Pad = PadBase & {
   keyBinding: KeyBinding;
+};
+
+export type PadDropSource = {
+  type: 'library' | 'pad';
+  padId?: string;
+};
+
+export type PadMode = 'relative' | 'absolute';
+
+export type PadAssignment =
+  | {
+      type: 'default';
+      definitionId: string;
+      mode?: PadMode;
+      color?: PadColor;
+    }
+  | {
+      type: 'custom';
+      baseTonic: Tonic;
+      rootNote: Tonic;
+      chordTypeId: string;
+      bassNote?: Tonic;
+      group: PadGroup;
+      mode?: PadMode;
+      color?: PadColor;
+    };
+
+export type PadAssignmentState = {
+  [padId: string]: PadAssignment | null;
+};
+
+export type ChordLibrarySelection = {
+  rootNote: Tonic;
+  chordTypeId: string;
+  bassNote?: Tonic;
+  group: PadGroup;
 };
 
 export type PadLayoutConfig = {

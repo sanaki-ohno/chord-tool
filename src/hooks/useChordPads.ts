@@ -2,22 +2,27 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import * as Tone from 'tone';
 import { KEY_BINDINGS } from '../config/keyOptions';
-import { PAD_DEFINITIONS, buildPads } from '../config/musicTheory';
+import {
+  PAD_DEFINITIONS,
+  buildPads,
+  buildCustomPadFromAssignment,
+  getPadRowColor,
+  getRomanNumeralForAssignmentNote,
+} from '../config/musicTheory';
 import type {
   Pad,
   PadLayoutConfig,
-  PadDefinition,
   KeyBinding,
   Tonic,
+  PadAssignmentState,
+  PadBase,
 } from '../types/music';
 
 const normalizeLayoutConfig = (
   layoutConfig?: PadLayoutConfig
 ): {
-  padDefinitions: PadDefinition[];
   keyBindings: KeyBinding[];
 } => ({
-  padDefinitions: layoutConfig?.padDefinitions ?? PAD_DEFINITIONS,
   keyBindings: layoutConfig?.keyBindings ?? KEY_BINDINGS,
 });
 
@@ -26,6 +31,7 @@ type UseChordPadsParams = {
   synth: Tone.PolySynth | null;
   startAudioContext: () => Promise<void>;
   layoutConfig?: PadLayoutConfig;
+  padAssignments: PadAssignmentState;
   padEventHandlers?: {
     onPadPress?: (pad: Pad) => void;
     onPadRelease?: (pad: Pad) => void;
@@ -37,26 +43,92 @@ export const useChordPads = ({
   synth,
   startAudioContext,
   layoutConfig,
+  padAssignments,
   padEventHandlers,
 }: UseChordPadsParams) => {
-  const { padDefinitions, keyBindings } = useMemo(
+  const { keyBindings } = useMemo(
     () => normalizeLayoutConfig(layoutConfig),
     [layoutConfig]
   );
   const [activePadIds, setActivePadIds] = useState<string[]>([]);
   const heldPadsRef = useRef<Record<string, boolean>>({});
 
+  const defaultPadMap = useMemo(() => {
+    return buildPads(tonic).reduce<Record<string, PadBase>>((map, pad) => {
+      map[pad.id] = pad;
+      return map;
+    }, {});
+  }, [tonic]);
+
   const pads = useMemo(() => {
-    const basePads = buildPads(tonic, { padDefinitions });
-    if (basePads.length !== keyBindings.length) {
+    return PAD_DEFINITIONS.map((definition, index) => {
+      const padId = definition.id;
+      const assignment = padAssignments[padId];
+
+      let padBase: PadBase;
+      if (!assignment) {
+        padBase = {
+          id: padId,
+          roman: definition.roman,
+          group: 'diatonic',
+          chordName: '',
+          notes: [],
+          color: getPadRowColor(padId),
+        };
+      } else if (assignment.type === 'default') {
+        const baseDefinition =
+          defaultPadMap[assignment.definitionId] ?? defaultPadMap[padId];
+        const assignmentColor = assignment.color ?? getPadRowColor(assignment.definitionId);
+        const sourceDefinition = PAD_DEFINITIONS.find(
+          (def) => def.id === assignment.definitionId
+        );
+        const roman =
+          sourceDefinition?.roman ??
+          baseDefinition?.roman ??
+          definition.roman;
+        if (baseDefinition) {
+          padBase = {
+            ...baseDefinition,
+            id: padId,
+            color: assignmentColor,
+            roman,
+          };
+        } else {
+          padBase = {
+            id: padId,
+            roman,
+            group: 'diatonic',
+            chordName: '',
+            notes: [],
+            color: assignmentColor,
+          };
+        }
+      } else {
+        const customBase = buildCustomPadFromAssignment(assignment, tonic, padId);
+        const rootRoman = getRomanNumeralForAssignmentNote(assignment, tonic);
+        const bassRoman =
+          assignment.bassNote !== undefined
+            ? getRomanNumeralForAssignmentNote(assignment, tonic, assignment.bassNote)
+            : null;
+        const customRoman = bassRoman ? `${rootRoman}/${bassRoman}` : rootRoman;
+        padBase = { ...customBase, roman: customRoman };
+      }
+
+      const keyBinding = keyBindings[index] ?? { key: padId, label: padId };
+
+      return {
+        ...padBase,
+        id: padId,
+        keyBinding,
+      };
+    });
+  }, [padAssignments, defaultPadMap, keyBindings, tonic]);
+
+  useEffect(() => {
+    if (PAD_DEFINITIONS.length !== keyBindings.length) {
       console.warn('Pad and key binding count mismatch.');
     }
-
-    return basePads.map((pad, index) => ({
-      ...pad,
-      keyBinding: keyBindings[index] ?? { key: pad.id, label: pad.id },
-    }));
-  }, [tonic, padDefinitions, keyBindings]);
+  }, [keyBindings]);
 
   const padMap = useMemo(() => {
     return pads.reduce<Record<string, Pad>>((map, pad) => {
@@ -67,7 +139,9 @@ export const useChordPads = ({
 
   const handlePadPress = useCallback(
     async (pad: Pad) => {
-      if (!synth || heldPadsRef.current[pad.id]) return;
+      if (!synth || heldPadsRef.current[pad.id] || pad.notes.length === 0) {
+        return;
+      }
 
       await startAudioContext();
       pad.notes.forEach((note) => synth.triggerAttack(note, Tone.now()));
@@ -82,7 +156,9 @@ export const useChordPads = ({
 
   const handlePadRelease = useCallback(
     (pad: Pad) => {
-      if (!synth || !heldPadsRef.current[pad.id]) return;
+      if (!synth || !heldPadsRef.current[pad.id] || pad.notes.length === 0) {
+        return;
+      }
 
       pad.notes.forEach((note) => synth.triggerRelease(note, Tone.now()));
       delete heldPadsRef.current[pad.id];
@@ -130,7 +206,7 @@ export const useChordPads = ({
   useEffect(() => {
     heldPadsRef.current = {};
     setActivePadIds([]);
-  }, [tonic, padDefinitions, keyBindings, synth]);
+  }, [tonic, keyBindings, synth]);
 
   return {
     pads,

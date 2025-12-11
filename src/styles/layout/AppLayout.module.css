@@ -188,7 +188,7 @@
   }
 
   .padArea {
-    flex-direction: column-reverse;
+    flex-direction: column;
   }
 
   .heroControls {
